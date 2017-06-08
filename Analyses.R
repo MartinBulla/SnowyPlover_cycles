@@ -20,13 +20,23 @@
 }
 
 {# LOAD DATA
+	n = read.csv(file=paste(wd, "metadata_nestID_parentsID.csv", sep=''),header=T,sep=";", fill=T, stringsAsFactors=FALSE, col.names=c('year','nest','found','laying','end','fate','lat','lon','male','female'))
+		n$fate=tolower(n$fate)
+		n$lat=gsub(",", ".", n$lat)
+		n$lon=gsub(",", ".",n$lon)
+		
+	g = read.csv(file=paste(wd, "moonsequ_tidesequ_cond_datetime.csv", sep=''),header=T,sep=";", fill=T, stringsAsFactors=FALSE)
+	
 	d<-read.csv(file=paste(wd, "CeutaData.csv", sep=''),header=T,sep=",", fill=T, stringsAsFactors=FALSE)
 	colnames(d) = tolower(colnames(d))
 	d = d[!is.na(d$ld),]
+	d$lat = as.numeric(n$lat[match(d$id,n$nest)])
+	d$lon = as.numeric(n$lon[match(d$id,n$nest)])
 	# add tide count
 	#s = ddply(d[is.n.,(
 }
-
+ 
+ 
 {# distributions
 	str(d)
 	ggplot(d, aes(x=ldy, fill=factor(year))) + geom_histogram(alpha  = 0.5, position = 'dodge')
@@ -47,7 +57,7 @@
 	
 	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year), family = 'binomial', d) 
 	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year), family = 'binomial', d) 
-	f
+	
 	plot(allEffects(m))
 	summary(glht(m))
 	
@@ -151,7 +161,60 @@
 						
 						
 	}			
-					
+		{# model assumptions
+			m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year), family = 'binomial', d) 
+			#png(paste(out_,"model_ass/Supplementary_Table_2.png", sep=""), width=6,height=9,units="in",res=600)
+			dev.new(width=6,height=9)
+			par(mfrow=c(5,3),oma = c(0, 0, 1.5, 0) )
+									 								  
+			scatter.smooth(fitted(m),resid(m),col='red');abline(h=0, lty=2)
+			scatter.smooth(fitted(m),sqrt(abs(resid(m))), col='red')
+			qqnorm(resid(m), main=list("Normal Q-Q Plot: residuals", cex=0.8),col='red') 
+			qqline(resid(m))
+									  
+				qqnorm(unlist(ranef(m)$year [1]), main = " intercept",col='red')
+				qqline(unlist(ranef(m)$year [1]))
+									  
+				#qqnorm(unlist(ranef(m)$nest_ID[2]), main = " slope",col='red')
+				#qqline(unlist(ranef(m)$nest_ID[2]))
+			
+			plot(fitted(m), jitter(d$flooded, amount=0.05), xlab="Fitted values", ylab="Flooded", las=1, cex.lab=1.2, cex=0.8)
+				abline(0,1, lty=3)
+				t.breaks <- cut(fitted(m), quantile(fitted(m)))
+				means <- tapply(d$flooded, t.breaks, mean)
+				semean <- function(x) sd(x)/sqrt(length(x))
+				means.se <- tapply(d$flooded, t.breaks, semean)
+				points(quantile(fitted(m),c(0.125,0.375,0.625,0.875)), means, pch=16, col="orange")
+				segments(quantile(fitted(m),c(0.125,0.375,0.625,0.875)), means-2*means.se, quantile(fitted(m),c(0.125,0.375,0.625,0.875)), means+2*means.se,lwd=2, col="orange")
+										
+				#scatter.smooth(resid(m)~x2$date[x2$sum>720]);abline(h=0, lty=2, col='red')
+				scatter.smooth(resid(m)~sin(d$rad_st));abline(h=0, lty=2, col='red')
+				scatter.smooth(resid(m)~cos(d$rad_st));abline(h=0, lty=2, col='red')
+				scatter.smooth(resid(m)~d$rad_st);abline(h=0, lty=2, col='red')
+				#boxplot(resid(m)~bb_$type);abline(h=0, lty=2, col='red')
+									  
+				mtext("glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year), family = 'binomial', d)", side = 3, line = 0.5, cex=0.8,outer = TRUE)
+									   
+				acf(resid(m), type="p", main=list("Temporal autocorrelation:\npartial series residual",cex=0.8))
+									  # spatial autocorrelations - nest location
+				spdata=data.frame(resid=resid(m), x=d$lon, y=d$lat)
+				spdata=spdata[-which(is.na(spdata$y)),]
+						spdata$col=ifelse(spdata$resid<0,rgb(83,95,124,100, maxColorValue = 255),ifelse(spdata$resid>0,rgb(253,184,19,100, maxColorValue = 255), 'red'))
+											#cex_=c(1,2,3,3.5,4)
+						cex_=c(1,1.5,2,2.5,3)
+						spdata$cex=as.character(cut(abs(spdata$resid), 5, labels=cex_))
+						
+						plot(spdata$x, spdata$y,col=spdata$col, cex=as.numeric(spdata$cex), pch= 16, main=list('Spatial distribution of residuals', cex=0.8))
+						legend("topleft", pch=16, legend=c('>0','<0'), ,col=c(rgb(83,95,124,100, maxColorValue = 255),rgb(253,184,19,100, maxColorValue = 255)), cex=0.8)
+						
+						plot(spdata$x[spdata$x<23.930], spdata$y[spdata$x<23.930],col=spdata$col[spdata$x<23.930], cex=as.numeric(spdata$cex[spdata$x<23.930]), pch= 16, main=list('Spatial distribution of residuals', cex=0.8))
+						
+						plot(spdata$x[spdata$resid<0], spdata$y[spdata$resid<0],col=spdata$col[spdata$resid<0], cex=as.numeric(spdata$cex[spdata$resid<0]), pch= 16, main=list('Spatial distribution of residuals', cex=0.8))
+						plot(spdata$x[spdata$resid>=0], spdata$y[spdata$resid>=0],col=spdata$col[spdata$resid>=0], cex=as.numeric(spdata$cex[spdata$resid>=0]), pch= 16, main=list('Spatial distribution of residuals', cex=0.8))
+								
+						dev.off()
+		
+		}
 }
 {# 
 
