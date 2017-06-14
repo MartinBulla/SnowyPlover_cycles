@@ -4,7 +4,7 @@
 	}
 	
 	{# load packages
-		sapply(c('arm','effects', 'data.table','ggplot2','grid', 'lattice','magrittr','multcomp','plyr','raster','stringr','XLConnect'),
+		sapply(c('arm','effects', 'data.table','ggplot2','grid', 'lattice','magrittr','multcomp','plyr','raster','RColorBrewer','sqldf','stringr','XLConnect'),
     function(x) suppressPackageStartupMessages(require(x , character.only = TRUE, quietly = TRUE) ))
 
 	}
@@ -15,6 +15,7 @@
 		min_ = -0.1
 		max_ = 6
 		
+		#yr_col = mypalette<-brewer.pal(12,"Greens")
 		wr_col="grey50"
 		ln_col="grey80"
 		disturb='#5eab2b'

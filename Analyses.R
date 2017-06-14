@@ -1,8 +1,3 @@
-# TO DO
-# tide number
-# what to do with the NAs layind dates
-
-# INFO 
 # R Script generates statistical outputs for snowy plover nest initiation cycles
 
 {# SETTINGS & DATA
@@ -16,48 +11,20 @@
 	}
 	{# load packages, constants and data
 		source(paste(wd, 'Constants_Functions.R',sep=""))
+		source(paste(wd, 'Prepare_Data.R',sep=""))
 	}
 }
 
-{# LOAD DATA
-	n = read.csv(file=paste(wd, "metadata_nestID_parentsID.csv", sep=''),header=T,sep=";", fill=T, stringsAsFactors=FALSE, col.names=c('year','nest','found','laying','end','fate','lat','lon','male','female'))
-		n$fate=tolower(n$fate)
-		n$lat=gsub(",", ".", n$lat)
-		n$lon=gsub(",", ".",n$lon)
-		
-	g = read.csv(file=paste(wd, "moonsequ_tidesequ_cond_datetime.csv", sep=''),header=T,sep=";", fill=T, stringsAsFactors=FALSE)
-	
-	d<-read.csv(file=paste(wd, "CeutaData.csv", sep=''),header=T,sep=",", fill=T, stringsAsFactors=FALSE)
-	colnames(d) = tolower(colnames(d))
-	d = d[!is.na(d$ld),]
-	d$lat = as.numeric(n$lat[match(d$id,n$nest)])
-	d$lon = as.numeric(n$lon[match(d$id,n$nest)])
-	# add tide count
-	#s = ddply(d[is.n.,(
-}
- 
- 
-{# distributions
-	str(d)
-	ggplot(d, aes(x=ldy, fill=factor(year))) + geom_histogram(alpha  = 0.5, position = 'dodge')
-	ggplot(d, aes(x=ldy, fill=factor(year))) + geom_density(alpha  = 0.5)
-	ggplot(d, aes(x=ldy)) + geom_density(alpha  = 0.5)
-	
-	ggplot(d, aes(x=dast, fill=factor(year))) + geom_density(alpha  = 0.5)
-	ggplot(d, aes(x=dast, fill=factor(f))) + geom_density(alpha  = 0.5)
-	ggplot(d, aes(x=dast)) + geom_density(alpha  = 0.5)
-		
-}
-
-{# flooding
-	d$flooded = ifelse(d$f=='FLOOD',1,0)
+{# FLOODING
+	d = nn
+	d$flooded = ifelse(d$fate=='flood',1,0)
 	#d$rad_st= 2*d$hour*pi/24
-	d$rad_st= 2*d$dast*pi/14.75
+	d$rad_st= 2*d$days_after_st*pi/14.75
 	
 	
-	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year), family = 'binomial', d) 
-	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year), family = 'binomial', d) 
-	
+	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|tide_cycle)+(1|pair), family = 'binomial', d) 
+	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|pair), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
+		
 	plot(allEffects(m))
 	summary(glht(m))
 	
@@ -162,7 +129,9 @@
 						
 	}			
 		{# model assumptions
-			m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year), family = 'binomial', d) 
+			m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|tide_cycle)+(1|pair), family = 'binomial', d) 
+			#m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|pair), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
+		
 			#png(paste(out_,"model_ass/Supplementary_Table_2.png", sep=""), width=6,height=9,units="in",res=600)
 			dev.new(width=6,height=9)
 			par(mfrow=c(5,3),oma = c(0, 0, 1.5, 0) )
@@ -174,6 +143,9 @@
 									  
 				qqnorm(unlist(ranef(m)$year [1]), main = " intercept",col='red')
 				qqline(unlist(ranef(m)$year [1]))
+				
+				qqnorm(unlist(ranef(m)$pair [1]), main = " intercept",col='red')
+				qqline(unlist(ranef(m)$pair [1]))
 									  
 				#qqnorm(unlist(ranef(m)$nest_ID[2]), main = " slope",col='red')
 				#qqline(unlist(ranef(m)$nest_ID[2]))
@@ -216,9 +188,53 @@
 		
 		}
 }
-{# 
 
+
+{# OLD
+{# LOAD DATA
+	
+	d<-read.csv(file=paste(wd, "metadata_illu_tide_temp.csv", sep=''),header=T,sep=";", fill=T, stringsAsFactors=FALSE)
+	#, col.names=c('year','nest','found','laid','end','found_julian','laid_julian','end_julian','fate',)
+	colnames(d)[colnames(d)=='nest_ID'] = 'nest'
+	#nrow(d[d$laid=='NA',])
+	d$lat = as.numeric(n$lat[match(d$nest,n$nest)])
+	d$lon = as.numeric(n$lon[match(d$nest,n$nest)])
+	d$laid=as.POSIXct(d$laid)
+	d$pk=1:nrow(d)
+	d$laid[d$laid=='2016-09-04'] = '2016-04-09'
+	d$laid[d$laid=='2016-12-04'] = '2016-04-12'
+	d$laid[d$laid=='2016-08-05'] = '2016-05-08'
+	d$laid[d$laid=='2016-10-05'] = '2016-05-10'
+	d$laid[d$laid=='2016-11-05'] = '2016-05-11'
+	d$laid[d$laid=='2016-12-05'] = '2016-05-12'
+	d$laid[d$laid=='2006-01-05'] = '2006-05-01'
+	d$laid[d$laid=='2006-01-06'] = '2006-06-01'
+	d=d[!is.na(d$laid),]
+	
+	j =  sqldf("select*from d join gs_", stringsAsFactors = FALSE)
+	d = sqldf("select*from j WHERE laid BETWEEN  datetime_ and int OR laid = datetime_")
+		#d[!d$pk%in%dd$pk,]
+	
+				
+	# add tide count
+	#s = ddply(d[is.n.,(
+}
+{# distributions
+	ggplot(d, aes(x= d_after_springtide, y = tide_height, col=as.factor(tide_cycle))) + geom_point()+geom_line()+facet_grid(year ~ .)
+	ggplot(d, aes(x= d_after_springtide, y = tide_height, col=as.factor(tide_cycle))) + geom_point()+geom_line()
+	
+
+	str(d)
+	ggplot(d, aes(x=ldy, fill=factor(year))) + geom_histogram(alpha  = 0.5, position = 'dodge')
+	ggplot(d, aes(x=ldy, fill=factor(year))) + geom_density(alpha  = 0.5)
+	ggplot(d, aes(x=ldy)) + geom_density(alpha  = 0.5)
+	
+	ggplot(d, aes(x=dast, fill=factor(year))) + geom_density(alpha  = 0.5)
+	ggplot(d, aes(x=dast, fill=factor(f))) + geom_density(alpha  = 0.5)
+	ggplot(d, aes(x=dast)) + geom_density(alpha  = 0.5)
+	
 }
 {# moon light
 d$rad_nm= 2*d$danm*pi/29.5
-}	
+}
+}
