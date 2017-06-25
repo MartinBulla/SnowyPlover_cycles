@@ -13,20 +13,38 @@
 	# moon tide data	
 	  g = read.csv(file=paste(wd, "moonsequ_tidesequ.csv", sep=''),header=T,sep=";", fill=T, stringsAsFactors=FALSE, col.names=c('year','datetime_','event','moon_cycle','start_moon_cycle','tide_cycle','start_tide_cycle'))
 	
-	# create tide cycle # within each year
+	# create spring-tide cycle # within each year
 		gs=g[g$event%in%c('nm','fm'),]
 		gs$int=c(gs$datetime_[-1],gs$datetime_[nrow(gs)])
-		gs$datetime_=as.POSIXct(gs$datetime_)
-		gs$int=as.POSIXct(gs$int)
-		gs=gs[order(gs$year, gs$datetime_),]
-		gs = ddply(gs,.(year),transform, tide_cycle=1:length(year))
-		gs_=gs[,c('datetime_','int','tide_cycle')] 
+		gs$st_start=as.POSIXct(gs$datetime_)
+		gs$st_end=as.POSIXct(gs$int)
+		gs=gs[order(gs$year, gs$st_start),]
+		gs = ddply(gs,.(year),transform, st_cycle=1:length(year))
+		gs_=gs[,c('st_start','st_end','st_cycle')] 
 	
 	# add tide cycles to nests
 		j =  sqldf("select*from n join gs_", stringsAsFactors = FALSE)
-		nn = sqldf("select*from j WHERE laid BETWEEN  datetime_ and int OR laid = datetime_")
+		nn = sqldf("select*from j WHERE laid BETWEEN  st_start and st_end OR laid = st_start")
 		#n[!n$pk%in%nn$pk,]
 	
-	# calculate days after last spring tide
-		nn$days_after_st = as.numeric(difftime(nn$laid, nn$datetime_, units ='days'))
+	 # calculate days after last spring tide
+		nn$days_after_st = as.numeric(difftime(nn$laid, nn$st_start, units ='days'))	
+		
+	# create moon cycle # within each year
+		gs=g[g$event%in%c('nm'),]
+		gs$int=c(gs$datetime_[-1],gs$datetime_[nrow(gs)])
+		gs$m_start=as.POSIXct(gs$datetime_)
+		gs$m_end=as.POSIXct(gs$int)
+		gs=gs[order(gs$year, gs$m_start),]
+		gs = ddply(gs,.(year),transform, moon_cycle=1:length(year))
+		gs_=gs[,c('m_start','m_end','moon_cycle')] 
+	
+	# add tide cycles to nests
+		j =  sqldf("select*from nn join gs_", stringsAsFactors = FALSE)
+		nn = sqldf("select*from j WHERE laid BETWEEN  m_start and m_end OR laid = m_start")
+		#n[!n$pk%in%nn$pk,]	
+	
+	# calculate days after last new moon
+		nn$days_after_nm = as.numeric(difftime(nn$laid, nn$m_start, units ='days'))	
+
 }
