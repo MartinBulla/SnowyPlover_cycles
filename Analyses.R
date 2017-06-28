@@ -16,14 +16,23 @@
 }
 
 {# FLOODING
-	d = nn
+	d = nn[!is.na(nn$fate),]
+	d$fate[d$fate=='tide'] = 'flood'
 	d$flooded = ifelse(d$fate=='flood',1,0)
+
 	#d$rad_st= 2*d$hour*pi/24
 	d$rad_st= 2*d$days_after_st*pi/14.75
+	d$year_tc=factor(paste(d$year,d$st_cycle))
+	
+	ggplot(d[d$fate=='flood',],aes(x = days_after_st)) + geom_histogram()
+	ggplot(d[d$fate=='flood',],aes(x = days_after_st, col=factor(year))) + geom_density()
+	ggplot(d[d$fate=='hatch',],aes(x = days_after_st, col=factor(st_cycle))) + geom_density()
+	ggplot(d[d$fate%in%c('flood','hatch'),],aes(x = days_after_st, fill=fate)) + geom_histogram()
 	
 	
-	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|tide_cycle)+(1|pair), family = 'binomial', d) 
+	#m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|st_cycle)+(1|pair), family = 'binomial', d) 
 	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|pair), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
+	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) + scale(st_cycle) + (1|year)+(1|pair), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
 		
 	plot(allEffects(m))
 	summary(glht(m))
@@ -35,10 +44,10 @@
 				
 				# coefficients
 					v = apply(bsim@fixef, 2, quantile, prob=c(0.5))
-				
+					ci = apply(bsim@fixef, 2, quantile, prob=c(0.025, 0.975))
 				# values to predict for		
-					newD=data.frame(dast = seq(0,15, length.out=300))
-					newD$rad_st =2*newD$dast*pi/14.75
+					newD=data.frame(days_after_st = seq(0,15, length.out=300))
+					newD$rad_st =2*newD$days_after_st*pi/14.75
 						
 				# exactly the model which was used has to be specified here 
 					X <- model.matrix(~ sin(rad_st)+cos(rad_st),data=newD)	
@@ -52,22 +61,22 @@
 					pp=newD	
 	}
 	{# raw data
-		x = ddply(d,.(year, dast), summarise, mean_ = mean(flooded)*100, sd_ = sd(flooded)*100, n = length(year))
+		x = ddply(d,.(year, days_after_st), summarise, mean_ = mean(flooded)*100, sd_ = sd(flooded)*100, n = length(year))
 			y = data.frame(year = unique(d$year), col_ =1:length(unique(d$year)), stringsAsFactors = FALSE)
 			x$col_ = y$col_[match(x$year, y$year)]
 			
-		x2 = ddply(d,.(dast), summarise, mean_ = mean(flooded)*100, sd_ = sd(flooded)*100, n = length(year))	
+		x2 = ddply(d,.(days_after_st), summarise, mean_ = mean(flooded)*100, sd_ = sd(flooded)*100, n = length(year))	
 	}
 	{# plot 0:40
 		if(PNG == TRUE) {
-			png(paste(outdir,"Figure_flood.png", sep=""), width=1.85,height=1.5,units="in",res=600) 
+			png(paste(outdir,"Figure_flood_update.png", sep=""), width=1.85,height=1.5,units="in",res=600) 
 					}else{
 					dev.new(width=1.85,height=1.5)
 					}	
 				
 				par(mar=c(0.25,0.5,0,1.2),oma = c(1.5, 1.5, 0.2, 1.5),ps=12, mgp=c(1.2,0.35,0), las=1, cex=1, col.axis="grey30",font.main = 1, col.lab="grey30", col.main="grey30", fg="grey70", cex.lab=0.6,cex.main=0.7, cex.axis=0.5, tcl=-0.1,bty="n",xpd=TRUE) #
 						
-				plot(pp$pred~pp$dast, 
+				plot(pp$pred~pp$days_after_st, 
 						xlim=c(0,15), ylim=c(0,30),
 						xaxt='n',
 						xaxs = 'i', yaxs = 'i',
@@ -78,11 +87,11 @@
 						mtext("Flooded nests [%]",side=2,line=1, cex=0.6, las=3, col='grey30')
 						
 						
-						polygon(c(pp$dast, rev(pp$dast)), c(pp$lwr, 
+						polygon(c(pp$days_after_st, rev(pp$days_after_st)), c(pp$lwr, 
 								rev(pp$upr)), border=NA, col=col_lb) #0,0,0 black 0.5 is transparents RED
-							lines(pp$dast, pp$pred, col=col_l,lwd=1)
-						#symbols( jitter(x$dast),jitter(x$mean_), circles=sqrt(x$n/pi),inches=0.14/1.75,bg=adjustcolor(x$col_, alpha.f = 0.5), fg=col_p,add=TRUE) 
-						symbols( jitter(x2$dast),jitter(x2$mean_), circles=sqrt(x2$n/pi),inches=0.14/1.75,bg=col_pb, fg=col_p,add=TRUE) 
+							lines(pp$days_after_st, pp$pred, col=col_l,lwd=1)
+						#symbols( jitter(x$days_after_st),jitter(x$mean_), circles=sqrt(x$n/pi),inches=0.14/1.75,bg=adjustcolor(x$col_, alpha.f = 0.5), fg=col_p,add=TRUE) 
+						symbols( jitter(x2$days_after_st),jitter(x2$mean_), circles=sqrt(x2$n/pi),inches=0.14/1.75,bg=col_pb, fg=col_p,add=TRUE) 
 
 						
 						# legend
@@ -100,14 +109,14 @@
 	}			
 	{# plot 0:100
 		if(PNG == TRUE) {
-			png(paste(outdir,"Figure_flood_means_pre_year.png", sep=""), width=1.85,height=1.5,units="in",res=600) 
+			png(paste(outdir,"Figure_flood_means_pre_year_update.png", sep=""), width=1.85,height=1.5,units="in",res=600) 
 					}else{
 					dev.new(width=1.85,height=1.5)
 					}	
 				
 				par(mar=c(0.25,0.5,0.2,1.2),oma = c(1.5, 1.5, 0.2, 1.5),ps=12, mgp=c(1.2,0.35,0), las=1, cex=1, col.axis="grey30",font.main = 1, col.lab="grey30", col.main="grey30", fg="grey70", cex.lab=0.6,cex.main=0.7, cex.axis=0.5, tcl=-0.1,bty="n",xpd=TRUE) #
 						
-				plot(pp$pred~pp$dast, 
+				plot(pp$pred~pp$days_after_st, 
 						xlim=c(0,15), ylim=c(0,100),
 						xaxt='n',
 						xaxs = 'i', yaxs = 'i',
@@ -117,19 +126,19 @@
 						mtext("Days from spring tide",side=1,line=0.4, cex=0.5, las=1, col='grey30')
 						mtext("Flooded nests [%]",side=2,line=1, cex=0.6, las=3, col='grey30')
 						
-						symbols( jitter(x$dast),jitter(x$mean_), circles=sqrt(x$n/pi),inches=0.14/1.75,bg=adjustcolor(x$col_, alpha.f = 0.5), fg=col_p,add=TRUE) 
-						#symbols( jitter(x2$dast),jitter(x2$mean_), circles=sqrt(x2$n/pi),inches=0.14/1.75,bg=adjustcolor(col_f, alpha.f = 0.5), fg=col_p,add=TRUE) 
+						symbols( jitter(x$days_after_st),jitter(x$mean_), circles=sqrt(x$n/pi),inches=0.14/1.75,bg=adjustcolor(x$col_, alpha.f = 0.5), fg=col_p,add=TRUE) 
+						#symbols( jitter(x2$days_after_st),jitter(x2$mean_), circles=sqrt(x2$n/pi),inches=0.14/1.75,bg=adjustcolor(col_f, alpha.f = 0.5), fg=col_p,add=TRUE) 
 						
-						polygon(c(pp$dast, rev(pp$dast)), c(pp$lwr, 
+						polygon(c(pp$days_after_st, rev(pp$days_after_st)), c(pp$lwr, 
 								rev(pp$upr)), border=NA, col=adjustcolor(col_m ,alpha.f = 0.2)) #0,0,0 black 0.5 is transparents RED
-							lines(pp$dast, pp$pred, col=col_m,lwd=1)
+							lines(pp$days_after_st, pp$pred, col=col_m,lwd=1)
 							
 						if(PNG == TRUE) {dev.off()}
 						
 						
 	}			
 		{# model assumptions
-			m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|tide_cycle)+(1|pair), family = 'binomial', d) 
+			m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|st_cycle)+(1|pair), family = 'binomial', d) 
 			#m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|pair), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
 		
 			#png(paste(out_,"model_ass/Supplementary_Table_2.png", sep=""), width=6,height=9,units="in",res=600)
@@ -189,6 +198,84 @@
 		}
 }
 
+{# NEST INITIATION CYCLE
+	d = nn
+	d$laid_j = as.numeric(format(as.POSIXct(d$laid),"%j"))
+	dd = ddply(d,. (year, moon_cycle, st_cycle, laid_j), summarise, n_nest = length(year))
+	#dd = ddply(dd,. (year, moon_cycle, st_cycle), transform, laid_j_yc = laid_j-mean(laid_j))
+	dd$rad_st= 2*dd$laid_j*pi/14.75
+	dd$rad_m= 2*dd$laid_j*pi/(14.75*2)
+	#dd$rad_st_yc= 2*dd$laid_j_yc*pi/14.75
+	#dd$rad_m_yc= 2*dd$laid_j_yc*pi/(14.75*2)
+	
+	ggplot(d,aes(x = days_after_st)) + geom_histogram()
+	ggsave(file='days after spring tide.png')
+	ggplot(d,aes(x = days_after_nm)) + geom_histogram()
+	ggsave(file='days after new moon.png')
+	ggplot(d, aes(x = laid_j, col = as.factor(year))) + geom_density()
+	ggsave(file='laid distribution over years.png')
+	ggplot(d, aes(x = laid_j, col = as.factor(year))) + geom_density()+facet_grid(year ~ .)
+	ggsave(file='laid distribution over years 2.png')
+	
+	densityplot(~dd$n_nest)
+	ggplot(dd, aes(x = laid_j, y = n_nest, col = as.factor(year))) + geom_point() +stat_smooth()+facet_grid(year ~ .)
+	ggsave(file='lay date vs # of nests.png')
+	ggplot(dd, aes(x = laid_j, y = n_nest, col = as.factor(year))) + geom_point() +stat_smooth()+facet_grid(year ~ .) + coord_cartesian(ylim = c(0,5))
+	ggsave(file='lay date vs # of nests_zoom_.png')
+	#d$rad_st= 2*d$hour*pi/24
+	
+	m = lmer(n_nest ~ sin(rad_st) + cos(rad_st) + sin(rad_m) + cos(rad_m) + (1|year) + (1|moon_cycle) +(1|st_cycle), dd) 
+	#m = lmer(n_nest ~ sin(rad_st_yc) + cos(rad_st_yc) + sin(rad_m_yc) + cos(rad_m_yc) + (1|year) + (1|moon_cycle) +(1|st_cycle), dd) 
+	m = glmer(n_nest ~ sin(rad_st) + cos(rad_st) + sin(rad_m) + cos(rad_m) + (1|year) + (1|moon_cycle) +(1|st_cycle),family = 'poisson', dd) 
+	dispersion_glmer(m) # if over 1.4 then overdispersion is serious 
+	plot(allEffects(m))
+	summary(glht(m))
+	summary(m)
+	
+	# best fitting period in days for all and per year
+		period=c(seq(7,90,by=0.5)) #period=c(0.5,0.75,1.5,seq(1,21, by=1), seq(22,26, by=0.25), seq(27,48,by=1))
+		period=period[order(period)]	
+		
+		# run periodic regressions
+			l = list()
+			for(j in 1:length(unique(dd$year))){		
+				 o = list()
+				 for(jj in 1:length(period)){
+							v=dd[dd$year==unique(dd$year)[j],] # first row removes as it contains lag 0 autocorrelation 
+							v$period=period[jj]
+							v$rad= (2*pi*v$laid_j) / (period[jj])
+							v$sin_=sin(v$rad)
+							v$cos_=cos(v$rad)
+							o[[as.character(period[jj])]] = lm(n_nest ~ sin_ + cos_ ,v)
+							#print(jj)
+							}
+			# extract AIC estimates from model summaries and create deltaAIC
+				aa = data.frame(period, aic = sapply(o, AIC))
+				aa$delta=aa$aic-min(aa$aic)
+				aa=aa[order(aa$delta),]
+			
+			# add metadata
+				aa$year=unique(dd$year)[j]
+				aa$n_days=nrow(v)
+			
+			# save to a list
+				l[[j]]=aa
+				
+			# plot and save the data
+				 png(file=paste(outdir,"period_AIC/",unique(dd$year)[j],".png", sep =""), width=3, height=2.5, units = "in", res = 600)
+				 	par(mar=c(3.2,3.5,2.5,0.7), ps=12, mgp=c(2,0.5,0), las=1, cex.lab=0.8, cex.axis=0.65, tcl=-0.2, cex.main=0.8)
+					plot(delta~period,type="n", aa, main=paste(aa$year[1],"; # day: ", aa$n_days[1]), xlim=c(7,90), xaxt='n')#, ylim=c(0,100))
+					axis(1,seq(7,90))
+					#legend("topright", legend=c("simple", "interaction"), pch=c(1,16), col=c("black","grey"), pt.cex=0.7, cex=0.5)
+					abline(v=c(14.75,14.75*2),lty=3)
+					abline(h=3, lty=3, col="red")
+					points(delta~period,aa, cex=0.7)
+					dev.off()
+				 print(paste(j,aa$year[1],aa$n_days[1]))
+			}
+			
+
+}
 
 {# OLD
 {# LOAD DATA
@@ -220,8 +307,8 @@
 	#s = ddply(d[is.n.,(
 }
 {# distributions
-	ggplot(d, aes(x= d_after_springtide, y = tide_height, col=as.factor(tide_cycle))) + geom_point()+geom_line()+facet_grid(year ~ .)
-	ggplot(d, aes(x= d_after_springtide, y = tide_height, col=as.factor(tide_cycle))) + geom_point()+geom_line()
+	ggplot(d, aes(x= d_after_springtide, y = tide_height, col=as.factor(st_cycle))) + geom_point()+geom_line()+facet_grid(year ~ .)
+	ggplot(d, aes(x= d_after_springtide, y = tide_height, col=as.factor(st_cycle))) + geom_point()+geom_line()
 	
 
 	str(d)
