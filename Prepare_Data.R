@@ -13,9 +13,13 @@
 		n$pair=paste(n$male,n$female)
 		n$pk=1:nrow(n)
 		
-	# moon tide data	
-	  g = read.csv(file=paste(wd, "moonsequ_tidesequ.csv", sep=''),header=T,sep=";", fill=T, stringsAsFactors=FALSE, col.names=c('year','datetime_','event','moon_cycle','start_moon_cycle','tide_cycle','start_tide_cycle'))
-	
+	# moon tide cycle data	
+	  g = read.csv(file=paste(wd, "moonsequ_tidesequ.csv", sep=''), header = TRUE,sep=";", fill=T, stringsAsFactors=FALSE, col.names=c('year','datetime_','event','moon_cycle','start_moon_cycle','tide_cycle','start_tide_cycle')) 
+	  ### later delete
+	  #g = read.csv(file=paste(wd, "moonsequ_tidesequ_mtide_illu.csv", sep=''), header = TRUE,sep=",", fill=T, stringsAsFactors=FALSE, col.names=c('pk','year','datetime_','event','moon_cycle','start_moon_cycle','tide_cycle','start_tide_cycle', 'max_tide_height','i_noon')) #moonsequ_tidesequ
+	  #ggplot(g, aes(x=event, y=i_noon, col = as.factor(year)))+geom_point()
+	  ### later delter
+	  
 	# create spring-tide cycle # within each year
 		gs=g[g$event%in%c('nm','fm'),]
 		gs$int=c(gs$datetime_[-1],gs$datetime_[nrow(gs)])
@@ -49,5 +53,14 @@
 	
 	# calculate days after last new moon
 		nn$days_after_nm = as.numeric(difftime(nn$laid, nn$m_start, units ='days'))	
-
+		
+	# add tide hight and illumination at the given day
+		tt = read.csv(file=paste(wd, "tides_all.csv", sep=''), header = TRUE,sep=",", fill=T, stringsAsFactors=FALSE) 
+		str(nn)
+		nn$max_t_h =tt$max_tide_height[match(as.character(nn$laid), tt$date)] # some days have all high tides NA and hence there are no data, we shall use the next hight tide data
+		
+		ii = read.csv(file=paste(wd, "illumination_all.csv", sep=''), header = TRUE,sep=",", fill=T, stringsAsFactors=FALSE) 
+		#nn$illum_mp = ii$illumination_mp[match(as.character(nn$laid), substring(ii$meridian_passing,1,10))]
+		nn$illum_noon = ii$illumination_noon[match(as.character(nn$laid), substring(ii$noon,1,10))]
+			#plot(nn$illum_mp~nn$illum_noon)
 }
