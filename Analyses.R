@@ -208,6 +208,17 @@
 	#dd$rad_st_yc= 2*dd$laid_j_yc*pi/14.75
 	#dd$rad_m_yc= 2*dd$laid_j_yc*pi/(14.75*2)
 	
+	ggplot(d, aes(x = days_after_nm, y = illum_mid, col = as.factor(year))) +   geom_jitter(position = position_jitter(width = 0, height = 0.5)) +stat_smooth()+facet_grid(year ~ .)
+	ggsave(file='illumination given days after new moon jitter.png')
+	ggplot(d, aes(x = illum_mid, fill = as.factor(year))) + geom_histogram() +facet_grid(year ~ .)
+	ggsave(file='days after new moon Year hist.png')
+	ggplot(d, aes(x = illum_mid)) + geom_histogram()
+	ggplot(d, aes(x = days_after_nm, fill = as.factor(year))) + geom_histogram() +facet_grid(year ~ .)
+	ggsave(file='illumination midnight Year hist.png')
+	ggplot(d, aes(x = days_after_nm)) + geom_histogram()
+	ggplot(d, aes(x = days_after_st, fill = as.factor(year))) + geom_histogram() +facet_grid(year ~ .)
+	ggsave(file='days after spring tide Year hist.png')
+	
 	ggplot(d,aes(x = days_after_st)) + geom_histogram()
 	ggsave(file='days after spring tide.png')
 	ggplot(d,aes(x = days_after_nm)) + geom_histogram()
