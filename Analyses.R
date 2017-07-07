@@ -288,6 +288,27 @@
 
 }
 
+{# random sampling of days within the year
+  for (w in unique(nn$year)){
+	d = nn[nn$year == w,]
+	d$laid_j = as.numeric(format(as.POSIXct(d$laid),"%j"))
+	ii_=ii[ii$year == w,]
+	ii_$day_j = as.numeric(format(as.POSIXct(ii_$noon),"%j"))
+	
+	l = list()
+	for( i in 1:10){
+		s = data.frame(day_j = sample(seq(min(d$laid_j), max(d$laid_j)), nrow(d), replace = T))
+		
+		s$ill_midnight = ii_$illumination_noon[match(s$day_j, ii_$day_j)]
+		s$sample = i
+		l[[i]] = s
+	}
+	s = do.call(rbind,l)
+	ggplot(s, aes(x = ill_midnight, fill = as.factor(sample))) + geom_histogram() + facet_grid(sample ~ .) 
+	ggsave(file=paste(outdir, 'illumination random sample from ', w, ' days.png', sep=""))
+	}
+}
+
 {# OLD
 {# LOAD DATA
 	
@@ -336,3 +357,5 @@
 d$rad_nm= 2*d$danm*pi/29.5
 }
 }
+
+	
