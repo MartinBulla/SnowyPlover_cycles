@@ -27,15 +27,24 @@
 	ggplot(d[d$fate=='flood',],aes(x = days_after_st)) + geom_histogram()
 	ggplot(d[d$fate=='flood',],aes(x = days_after_st, col=factor(year))) + geom_density()
 	ggplot(d[d$fate=='hatch',],aes(x = days_after_st, col=factor(st_cycle))) + geom_density()
-	ggplot(d[d$fate%in%c('flood','hatch'),],aes(x = days_after_st, fill=fate)) + geom_histogram()
+	ggplot(d[d$fate%in%c('flood','hatch'),],aes(x = days_after_st, fill=fate)) + geom_histogram()+ylab('# of initiated nests') + xlab('Days after spring tide')
+		ggsave(file=paste(outdir,'#of_nests_given_day_and_fate.png',sep=''))
 	
 	
 	#m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|st_cycle)+(1|pair), family = 'binomial', d) 
+	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|st_cycle)+(1|pair), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
 	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|pair), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
+	
+	d$year_= as.factor(d$year)
+	m = glmer(flooded ~ sin(rad_st)*year_ + cos(rad_st)*year_ +(1|year_)+(1|st_cycle), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
+	
+	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) + (sin(rad_st) + cos(rad_st)|year), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
+	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) + (sin(rad_st) + cos(rad_st)|st_cycle), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
 	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) + scale(st_cycle) + (1|year)+(1|pair), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
 		
 	plot(allEffects(m))
 	summary(glht(m))
+	summary(m)
 	
 	{# predictions
 			m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year), family = 'binomial', d) 
@@ -201,13 +210,16 @@
 {# NEST INITIATION CYCLE
 	d = nn
 	d$laid_j = as.numeric(format(as.POSIXct(d$laid),"%j"))
-	dd = ddply(d,. (year, moon_cycle, st_cycle, laid_j), summarise, n_nest = length(year))
+	dd = ddply(d,. (year, moon_cycle, st_cycle, days_after_st, laid_j), summarise, n_nest = length(year))
 	#dd = ddply(dd,. (year, moon_cycle, st_cycle), transform, laid_j_yc = laid_j-mean(laid_j))
-	dd$rad_st= 2*dd$laid_j*pi/14.75
-	dd$rad_m= 2*dd$laid_j*pi/(14.75*2)
+	dd$rad_lst= 2*dd$laid_j*pi/14.75
+	dd$rad_st= 2*dd$days_after_st*pi/14.75
+	dd$rad_lm= 2*dd$laid_j*pi/(14.75*2)
+	dd$rad_m= 2*dd$days_after_st*pi/(14.75*2)
 	#dd$rad_st_yc= 2*dd$laid_j_yc*pi/14.75
 	#dd$rad_m_yc= 2*dd$laid_j_yc*pi/(14.75*2)
 	
+	# illumination
 	ggplot(d, aes(x = days_after_nm, y = illum_mid, col = as.factor(year))) +   geom_jitter(position = position_jitter(width = 0, height = 0.5)) +stat_smooth()+facet_grid(year ~ .)
 	ggsave(file='illumination given days after new moon jitter.png')
 	ggplot(d, aes(x = illum_mid, fill = as.factor(year))) + geom_histogram() +facet_grid(year ~ .)
@@ -215,14 +227,17 @@
 	ggplot(d, aes(x = illum_mid)) + geom_histogram()
 	ggplot(d, aes(x = days_after_nm, fill = as.factor(year))) + geom_histogram() +facet_grid(year ~ .)
 	ggsave(file='illumination midnight Year hist.png')
+	
+	# days after nm a st
 	ggplot(d, aes(x = days_after_nm)) + geom_histogram()
 	ggplot(d, aes(x = days_after_st, fill = as.factor(year))) + geom_histogram() +facet_grid(year ~ .)
 	ggsave(file='days after spring tide Year hist.png')
-	
 	ggplot(d,aes(x = days_after_st)) + geom_histogram()
 	ggsave(file='days after spring tide.png')
 	ggplot(d,aes(x = days_after_nm)) + geom_histogram()
 	ggsave(file='days after new moon.png')
+	
+	# laid date
 	ggplot(d, aes(x = laid_j, col = as.factor(year))) + geom_density()
 	ggsave(file='laid distribution over years.png')
 	ggplot(d, aes(x = laid_j, col = as.factor(year))) + geom_density()+facet_grid(year ~ .)
@@ -235,10 +250,25 @@
 	ggsave(file='lay date vs # of nests_zoom_.png')
 	#d$rad_st= 2*d$hour*pi/24
 	
-	m = lmer(n_nest ~ sin(rad_st) + cos(rad_st) + sin(rad_m) + cos(rad_m) + (1|year) + (1|moon_cycle) +(1|st_cycle), dd) 
-	#m = lmer(n_nest ~ sin(rad_st_yc) + cos(rad_st_yc) + sin(rad_m_yc) + cos(rad_m_yc) + (1|year) + (1|moon_cycle) +(1|st_cycle), dd) 
-	m = glmer(n_nest ~ sin(rad_st) + cos(rad_st) + sin(rad_m) + cos(rad_m) + (1|year) + (1|moon_cycle) +(1|st_cycle),family = 'poisson', dd) 
+	# tide hight
+	ggplot(d, aes(x = days_after_st, y = max_t_h, col = as.factor(year))) + geom_point() +stat_smooth()+facet_grid(year ~ .)
+	
+	# n_nest~st
+	ggplot(dd, aes(x = days_after_st, y = n_nest, col = as.factor(year))) + geom_point() +stat_smooth()+facet_grid(year ~ .)+ylab('# of initiated nests') + xlab ('Days after last spring tide')+ coord_cartesian(ylim = c(0,5))
+	ggsave(paste(outdir,'#of_nests_given_spring_tide_cycle_zoomed.png',sep=''))
+	
+	# laying
+	m = lmer(n_nest ~ sin(rad_lst) + cos(rad_lst) + sin(rad_lm) + cos(rad_lm) + (1|year) + (1|moon_cycle) +(1|st_cycle), dd) 
+		#m = lmer(n_nest ~ sin(rad_st_yc) + cos(rad_st_yc) + sin(rad_m_yc) + cos(rad_m_yc) + (1|year) + (1|moon_cycle) +(1|st_cycle), dd) 
+	m = glmer(n_nest ~ sin(rad_lst) + cos(rad_lst) + sin(rad_lm) + cos(radl_m) + (1|year) + (1|moon_cycle) +(1|st_cycle),family = 'poisson', dd) 
+	
+ 	m = lmer(n_nest ~ sin(rad_st) + cos(rad_st) + (1|year) +(1|st_cycle), dd) 
+	m = lmer(n_nest ~ sin(rad_st) + cos(rad_st) + (sin(rad_st) + cos(rad_st)|year) +(1|st_cycle), dd) 
 	dispersion_glmer(m) # if over 1.4 then overdispersion is serious 
+	
+
+	m = glmer(n_nest ~ sin(rad_st) + cos(rad_st) + (1|year) +(1|st_cycle), family = 'poisson',dd)	
+	m = glmer(n_nest ~ sin(rad_st) + cos(rad_st) + (sin(rad_st) + cos(rad_st)|year) +(1|st_cycle),family = 'poisson', dd) 
 	plot(allEffects(m))
 	summary(glht(m))
 	summary(m)
