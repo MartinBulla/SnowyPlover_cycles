@@ -30,11 +30,12 @@
 	ggplot(d[d$fate%in%c('flood','hatch'),],aes(x = days_after_st, fill=fate)) + geom_histogram()+ylab('# of initiated nests') + xlab('Days after spring tide')
 		ggsave(file=paste(outdir,'#of_nests_given_day_and_fate.png',sep=''))
 	
-	
+	# simple
 	#m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|st_cycle)+(1|pair), family = 'binomial', d) 
 	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|st_cycle)+(1|pair), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
 	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|pair), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
 	
+	# year
 	d$year_= as.factor(d$year)
 	m = glmer(flooded ~ sin(rad_st)*year_ + cos(rad_st)*year_ +(1|year_)+(1|st_cycle), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
 	
@@ -207,7 +208,7 @@
 		}
 }
 
-{# NEST INITIATION CYCLE
+{# NEST INITIATION CYCLE - only days with nests +  best fitted period in days
 	d = nn
 	d$laid_j = as.numeric(format(as.POSIXct(d$laid),"%j"))
 	dd = ddply(d,. (year, moon_cycle, st_cycle, days_after_st, laid_j), summarise, n_nest = length(year))
@@ -218,7 +219,28 @@
 	dd$rad_m= 2*dd$days_after_st*pi/(14.75*2)
 	#dd$rad_st_yc= 2*dd$laid_j_yc*pi/14.75
 	#dd$rad_m_yc= 2*dd$laid_j_yc*pi/(14.75*2)
+	dd$year_= as.factor(dd$year)
+	# center within year
+		dsplit=split(dd,paste(dd$year))
+		foo=lapply(dsplit,function(x) {
+				#x=incsplit$"s404"
+				#x$t_a=c(x$treat[-1], NA) 	
+				x$n_nest_c=x$n_nest - mean(x$n_nest)
+				return(x)
+				}
+				)
+		dd=do.call(rbind, foo)
 	
+	# center within year and cycle
+		dsplit=split(dd,paste(dd$year, dd$cycle))
+		foo=lapply(dsplit,function(x) {
+				#x=incsplit$"s404"
+				#x$t_a=c(x$treat[-1], NA) 	
+				x$n_nest_cc=x$n_nest - mean(x$n_nest)
+				return(x)
+				}
+				)
+		dd=do.call(rbind, foo)
 	# illumination
 	ggplot(d, aes(x = days_after_nm, y = illum_mid, col = as.factor(year))) +   geom_jitter(position = position_jitter(width = 0, height = 0.5)) +stat_smooth()+facet_grid(year ~ .)
 	ggsave(file='illumination given days after new moon jitter.png')
@@ -257,22 +279,31 @@
 	ggplot(dd, aes(x = days_after_st, y = n_nest, col = as.factor(year))) + geom_point() +stat_smooth()+facet_grid(year ~ .)+ylab('# of initiated nests') + xlab ('Days after last spring tide')+ coord_cartesian(ylim = c(0,5))
 	ggsave(paste(outdir,'#of_nests_given_spring_tide_cycle_zoomed.png',sep=''))
 	
-	# laying
+	# laying date
 	m = lmer(n_nest ~ sin(rad_lst) + cos(rad_lst) + sin(rad_lm) + cos(rad_lm) + (1|year) + (1|moon_cycle) +(1|st_cycle), dd) 
 		#m = lmer(n_nest ~ sin(rad_st_yc) + cos(rad_st_yc) + sin(rad_m_yc) + cos(rad_m_yc) + (1|year) + (1|moon_cycle) +(1|st_cycle), dd) 
 	m = glmer(n_nest ~ sin(rad_lst) + cos(rad_lst) + sin(rad_lm) + cos(radl_m) + (1|year) + (1|moon_cycle) +(1|st_cycle),family = 'poisson', dd) 
 	
+	# laying within tide cycle
  	m = lmer(n_nest ~ sin(rad_st) + cos(rad_st) + (1|year) +(1|st_cycle), dd) 
 	m = lmer(n_nest ~ sin(rad_st) + cos(rad_st) + (sin(rad_st) + cos(rad_st)|year) +(1|st_cycle), dd) 
 	dispersion_glmer(m) # if over 1.4 then overdispersion is serious 
-	
+		
 
 	m = glmer(n_nest ~ sin(rad_st) + cos(rad_st) + (1|year) +(1|st_cycle), family = 'poisson',dd)	
 	m = glmer(n_nest ~ sin(rad_st) + cos(rad_st) + (sin(rad_st) + cos(rad_st)|year) +(1|st_cycle),family = 'poisson', dd) 
+	
+		# centred within year
+			m = lmer(n_nest_c ~ sin(rad_st) + cos(rad_st) + (1|st_cycle), dd) 
+			m = lmer(n_nest_c ~ sin(rad_st) + cos(rad_st) + (sin(rad_st) + cos(rad_st)|st_cycle), dd)
+		# centred within cycle
+			m = lmer(n_nest_cc ~ sin(rad_st) + cos(rad_st) + (1|year), dd) 
+			m = lmer(n_nest_cc ~ sin(rad_st) + cos(rad_st) + (sin(rad_st) + cos(rad_st)|year), dd)	
+			
 	plot(allEffects(m))
 	summary(glht(m))
 	summary(m)
-	
+
 	# best fitting period in days for all and per year
 		period=c(seq(7,90,by=0.5)) #period=c(0.5,0.75,1.5,seq(1,21, by=1), seq(22,26, by=0.25), seq(27,48,by=1))
 		period=period[order(period)]	
@@ -317,6 +348,160 @@
 			
 
 }
+
+{# NEST INITIATION CYCLE - all days within the season
+	# prepare data
+	d = nn
+	dd = ddply(d,. (year, laid , moon_cycle, st_cycle, days_after_st, laid_j), summarise, n_nest = length(year))
+	#dd = ddply(dd,. (year, moon_cycle, st_cycle), transform, laid_j_yc = laid_j-mean(laid_j))
+	
+	dsplit=split(dd,paste(dd$year))
+		foo=lapply(dsplit,function(x) {
+				#x=dsplit$"2006"
+				y = data.frame(laid = seq(min(x$laid), max(x$laid), by = 'day'), n_nest = 0, year = x$year[1])
+				y = y[!y$laid%in%x$laid,]
+				y = 
+				#x$t_a=c(x$treat[-1], NA) 	
+				x = merge(x,y, all=TRUE)
+				x$days_b = c(NA,x$days_after_st[-length(x$days_after_st)])	
+				x$days_after_st[is.na(x$days_after_st)]=x$days_b[is.na(x$days_after_st)]+1
+				# repeat for those with two days after each other with no data
+				x$days_b = c(NA,x$days_after_st[-length(x$days_after_st)])	
+				x$days_after_st[is.na(x$days_after_st)]=x$days_b[is.na(x$days_after_st)]+1
+				
+				x$days_b = c(NA,x$st_cycle[-length(x$st_cycle)])	
+				x$st_cycle[is.na(x$st_cycle)]=x$days_b[is.na(x$st_cycle)]
+				# repeat for those with two days after each other with no data
+				x$days_b = c(NA,x$st_cycle[-length(x$st_cycle)])	
+				x$st_cycle[is.na(x$st_cycle)]=x$days_b[is.na(x$st_cycle)]
+				return(x)
+				}
+				)
+		dd=do.call(rbind, foo)
+	dd$laid_j = as.numeric(format(as.POSIXct(dd$laid),"%j"))
+	dd$rad_lst= 2*dd$laid_j*pi/14.75
+	dd$rad_st= 2*dd$days_after_st*pi/14.75
+	dd$rad_lm= 2*dd$laid_j*pi/(14.75*2)
+	dd$rad_m= 2*dd$days_after_st*pi/(14.75*2)
+	#dd$rad_st_yc= 2*dd$laid_j_yc*pi/14.75
+	#dd$rad_m_yc= 2*dd$laid_j_yc*pi/(14.75*2)
+	dd$year_= as.factor(dd$year)
+	densityplot(~dd$n_nest)
+		
+	# n_nest~st
+	ggplot(dd, aes(x = days_after_st, y = n_nest, col = as.factor(year))) + geom_point() +stat_smooth()+facet_grid(year ~ .)+ylab('# of initiated nests') + xlab ('Days after last spring tide')
+	ggsave(paste(outdir,'#of_nests_given_spring_tide_cycle_ALL-DAYS.png',sep=''))
+	ggplot(dd, aes(x = days_after_st, y = n_nest, col = as.factor(year))) + geom_point() +stat_smooth()+facet_grid(year ~ .)+ylab('# of initiated nests') + xlab ('Days after last spring tide')+ coord_cartesian(ylim = c(0,5))
+	ggsave(paste(outdir,'#of_nests_given_spring_tide_cycle_ALL-DAYS_zoomed.png',sep=''))
+	
+	# laying within tide cycle
+ 	m = lmer(n_nest ~ sin(rad_st) + cos(rad_st) + (1|year) +(1|st_cycle), dd) 
+	m = lmer(n_nest ~ sin(rad_st) + cos(rad_st) + (sin(rad_st) + cos(rad_st)|year) +(1|st_cycle), dd) 
+	dispersion_glmer(m) # if over 1.4 then overdispersion is serious 
+		
+	m = glmer(n_nest ~ sin(rad_st) + cos(rad_st) + (1|year) +(1|st_cycle), family = 'poisson',dd)	
+	m = glmer(n_nest ~ sin(rad_st) + cos(rad_st) + (sin(rad_st) + cos(rad_st)|year) +(1|st_cycle),family = 'poisson', dd) 
+		
+	plot(allEffects(m))
+	summary(glht(m))
+	summary(m)
+	
+	# best fitting period in days for all and per year
+		period=c(seq(7,90,by=0.5)) #period=c(0.5,0.75,1.5,seq(1,21, by=1), seq(22,26, by=0.25), seq(27,48,by=1))
+		period=period[order(period)]	
+		
+		# run periodic regressions
+			l = list()
+			for(j in 1:length(unique(dd$year))){		
+				 o = list()
+				 for(jj in 1:length(period)){
+							v=dd[dd$year==unique(dd$year)[j],] # first row removes as it contains lag 0 autocorrelation 
+							v$period=period[jj]
+							v$rad= (2*pi*v$laid_j) / (period[jj])
+							v$sin_=sin(v$rad)
+							v$cos_=cos(v$rad)
+							o[[as.character(period[jj])]] = lm(n_nest ~ sin_ + cos_ ,v)
+							#print(jj)
+							}
+			# extract AIC estimates from model summaries and create deltaAIC
+				aa = data.frame(period, aic = sapply(o, AIC))
+				aa$delta=aa$aic-min(aa$aic)
+				aa=aa[order(aa$delta),]
+			
+			# add metadata
+				aa$year=unique(dd$year)[j]
+				aa$n_days=nrow(v)
+			
+			# save to a list
+				l[[j]]=aa
+				
+			# plot and save the data
+				 png(file=paste(outdir,"period_AIC/",unique(dd$year)[j],"all-days.png", sep =""), width=3, height=2.5, units = "in", res = 600)
+				 	par(mar=c(3.2,3.5,2.5,0.7), ps=12, mgp=c(2,0.5,0), las=1, cex.lab=0.8, cex.axis=0.65, tcl=-0.2, cex.main=0.8)
+					plot(delta~period,type="n", aa, main=paste(aa$year[1],"; # day: ", aa$n_days[1]), xlim=c(7,90), xaxt='n')#, ylim=c(0,100))
+					axis(1,seq(7,90))
+					#legend("topright", legend=c("simple", "interaction"), pch=c(1,16), col=c("black","grey"), pt.cex=0.7, cex=0.5)
+					abline(v=c(14.75,14.75*2),lty=3)
+					abline(h=3, lty=3, col="red")
+					points(delta~period,aa, cex=0.7)
+					dev.off()
+				 print(paste(j,aa$year[1],aa$n_days[1]))
+			}
+			
+	
+	
+}	
+
+		{# model assumptions
+			#m = lmer(n_nest ~ sin(rad_st) + cos(rad_st) + (sin(rad_st) + cos(rad_st)|year) +(1|st_cycle), dd) 
+			m = glmer(n_nest ~ sin(rad_st) + cos(rad_st) + (sin(rad_st) + cos(rad_st)|year) +(1|st_cycle),family = 'poisson', dd) 
+			
+			#png(paste(outdir,"model_ass/n_nest_all-data.png", sep=""), width=6,height=9,units="in",res=600)
+			png(paste(outdir,"model_ass/n_nest_all-data_poisson.png", sep=""), width=6,height=9,units="in",res=600)
+			#dev.new(width=6,height=9)
+			par(mfrow=c(5,3),oma = c(0, 0, 1.5, 0) )
+									 								  
+			scatter.smooth(fitted(m),resid(m),col='red');abline(h=0, lty=2)
+			scatter.smooth(fitted(m),sqrt(abs(resid(m))), col='red')
+			qqnorm(resid(m), main=list("Normal Q-Q Plot: residuals", cex=0.8),col='red') 
+			qqline(resid(m))
+									  
+				qqnorm(unlist(ranef(m)$year [1]), main = " intercept",col='red')
+				qqline(unlist(ranef(m)$year [1]))
+				
+				qqnorm(unlist(ranef(m)$year [2]), main = " slope",col='red')
+				qqline(unlist(ranef(m)$year [2]))
+				
+				qqnorm(unlist(ranef(m)$year [3]), main = " slope",col='red')
+				qqline(unlist(ranef(m)$year [3]))
+				
+				qqnorm(unlist(ranef(m)$st_cycle [1]), main = " intercept",col='red')
+				qqline(unlist(ranef(m)$st_cycle [1]))
+									  
+				#qqnorm(unlist(ranef(m)$nest_ID[2]), main = " slope",col='red')
+				#qqline(unlist(ranef(m)$nest_ID[2]))
+			length(dd$n_nest)
+			length(dd$n_nest[!is.na(dd$st_cycle)])
+			length(fitted(m))
+			plot(dd$n_nest[!is.na(dd$st_cycle)]~fitted(m), xlab="Fitted values", ylab="n_nest", las=1, cex.lab=1.2, cex=0.8)
+				abline(0,1, lty=3, col = 'red')
+										
+				#scatter.smooth(resid(m)~x2$date[x2$sum>720]);abline(h=0, lty=2, col='red')
+				scatter.smooth(resid(m)~sin(dd$rad_st[!is.na(dd$st_cycle)]));abline(h=0, lty=2, col='red')
+				scatter.smooth(resid(m)~cos(dd$rad_st[!is.na(dd$st_cycle)]));abline(h=0, lty=2, col='red')
+				scatter.smooth(resid(m)~dd$rad_st[!is.na(dd$st_cycle)]);abline(h=0, lty=2, col='red')
+				#boxplot(resid(m)~bb_$type);abline(h=0, lty=2, col='red')
+									  
+				#mtext("lmer(n_nest ~ sin(rad_st) + cos(rad_st) + (sin(rad_st) + cos(rad_st)|year) +(1|st_cycle), dd) ", side = 3, line = 0.5, cex=0.8,outer = TRUE)
+				mtext("glmer(n_nest ~ sin(rad_st) + cos(rad_st) + (sin(rad_st) + cos(rad_st)|year) +(1|st_cycle),family = 'poisson', dd)  ", side = 3, line = 0.5, cex=0.8,outer = TRUE)
+									   
+				acf(resid(m), type="p", main=list("Temporal autocorrelation:\npartial series residual",cex=0.8))
+									  # spatial autocorrelations - nest location
+				dev.off()
+		
+		}
+
+
 
 {# random sampling of days within the year
   for (w in unique(nn$year)){
