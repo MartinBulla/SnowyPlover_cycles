@@ -19,19 +19,29 @@
 	d = nn[!is.na(nn$fate),]
 	d$fate[d$fate=='tide'] = 'flood'
 	d$flooded = ifelse(d$fate=='flood',1,0)
+	d$flooded_ = ifelse(d$fate=='flood','yes','no')
 
 	#d$rad_st= 2*d$hour*pi/24
 	d$rad_st= 2*d$days_after_st*pi/14.75
 	d$year_tc=factor(paste(d$year,d$st_cycle))
 	
+	ggplot(d,aes(x = days_after_st)) + geom_histogram()+facet_grid(year ~ .)
+	ggplot(d[d$fate=='flood',],aes(x = days_after_st)) + geom_histogram()
 	ggplot(d[d$fate=='flood',],aes(x = days_after_st)) + geom_histogram()
 	ggplot(d[d$fate=='flood',],aes(x = days_after_st, col=factor(year))) + geom_density()
 	ggplot(d[d$fate=='hatch',],aes(x = days_after_st, col=factor(st_cycle))) + geom_density()
+	ggplot(d[d$fate%in%c('flood','hatch'),],aes(x = days_after_st, fill=fate)) + geom_histogram()+ylab('# of initiated nests') + xlab('Days after spring tide')+facet_grid(year ~ .)
 	ggplot(d[d$fate%in%c('flood','hatch'),],aes(x = days_after_st, fill=fate)) + geom_histogram()+ylab('# of initiated nests') + xlab('Days after spring tide')
 		ggsave(file=paste(outdir,'#of_nests_given_day_and_fate.png',sep=''))
+		
+	ggplot(d,aes(x = days_after_st, fill=flooded_)) + geom_histogram()+ylab('# of initiated nests') + xlab('Days after spring tide')+facet_grid(year ~ .)
+	ggplot(d,aes(x = days_after_st, fill=flooded_)) + geom_histogram()+ylab('# of initiated nests') + xlab('Days after spring tide')
 	
 	# simple
 	#m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|st_cycle)+(1|pair), family = 'binomial', d) 
+	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|st_cycle)+(1|female), family = 'binomial', d) 
+	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(sin(rad_st) + cos(rad_st)|year)+(1|st_cycle)+(1|female), family = 'binomial', d)
+	
 	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|st_cycle)+(1|pair), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
 	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|pair), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
 	
@@ -352,7 +362,7 @@
 {# NEST INITIATION CYCLE - all days within the season
 	# prepare data
 	d = nn
-	dd = ddply(d,. (year, laid , moon_cycle, st_cycle, days_after_st, laid_j), summarise, n_nest = length(year))
+	dd = ddply(d,. (year, laid , moon_cycle, st_cycle, days_after_st), summarise, n_nest = length(year))
 	#dd = ddply(dd,. (year, moon_cycle, st_cycle), transform, laid_j_yc = laid_j-mean(laid_j))
 	
 	dsplit=split(dd,paste(dd$year))
@@ -380,6 +390,7 @@
 		dd=do.call(rbind, foo)
 	dd$laid_j = as.numeric(format(as.POSIXct(dd$laid),"%j"))
 	dd$rad_lst= 2*dd$laid_j*pi/14.75
+	dd$rad_st= 2*dd$days_after_st*pi/14.75
 	dd$rad_st= 2*dd$days_after_st*pi/14.75
 	dd$rad_lm= 2*dd$laid_j*pi/(14.75*2)
 	dd$rad_m= 2*dd$days_after_st*pi/(14.75*2)
