@@ -4,7 +4,7 @@
 		
 	  nn = read.csv(file=paste(wd, "metadata_nests_birds_CK.csv", sep=''),header=T,sep=",", fill=T, stringsAsFactors=FALSE, col.names=c('year','nest','found','laid','end','fate1','fate','lat','lon','male','female'))
 		 n$fate = nn$fate[match(tolower(paste(n$year,n$nest)), tolower(paste(nn$year,nn$nest)))]
-	  nnn = read.csv(file=paste(wd, "laid_new_2.csv", sep=''),header=T,sep=",", fill=T, stringsAsFactors=FALSE, col.names=c('pk','nest','laid'))
+	  nnn = read.csv(file=paste(wd, "laid_new_2.csv", sep=''),header=T,sep=",", fill=T, stringsAsFactors=FALSE, col.names=c('pk','year','nest','laid'))
 	  	n$laid = nnn$laid[match(n$nest,nnn$nest)]
 		#n$lat=gsub(",", ".", n$lat)
 		#n$lon=gsub(",", ".",n$lon)
@@ -69,7 +69,6 @@
 			#plot(nn$illum_mp~nn$illum_noon)
 			
 	# aggregated dataset with number of nests per day
-		moon_cycle, st_cycle, days_after_st
 		dd = ddply(nn,. (year, laid ), summarise, n_nest = length(year))	
 		names(dd)[names(dd)=='laid'] = 'datetime_'
 		dsplit=split(dd,paste(dd$year))
@@ -88,11 +87,12 @@
 		# add tide cycles to nests
 		j =  sqldf("select*from dd join gs_", stringsAsFactors = FALSE)
 		dd = sqldf("select*from j WHERE datetime_ BETWEEN  st_start and st_end OR datetime_ = st_start")
+		dd$days_after_st = as.numeric(difftime(dd$datetime_, dd$st_start, units ='days'))	
 		
 		# add moon cycles to nests
 		j =  sqldf("select*from dd join gss_", stringsAsFactors = FALSE)
 		dd = sqldf("select*from j WHERE datetime_ BETWEEN  m_start and m_end OR datetime_ = m_start")
-		
+		dd$days_after_nm = as.numeric(difftime(dd$datetime_, dd$m_start, units ='days'))	
 		
 }
 #d=nn

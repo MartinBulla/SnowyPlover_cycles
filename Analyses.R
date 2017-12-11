@@ -20,9 +20,10 @@
 	d$fate[d$fate=='tide'] = 'flood'
 	d$flooded = ifelse(d$fate=='flood',1,0)
 	d$flooded_ = ifelse(d$fate=='flood','yes','no')
+	d$year_ = as.factor(d$year)
 
 	#d$rad_st= 2*d$hour*pi/24
-	d$rad_st= 2*d$days_after_st*pi/14.75
+	d$rad_st= 2*d$days_after_st*pi/14.765 #or half a synodic month of 29.53 days 
 	d$year_tc=factor(paste(d$year,d$st_cycle))
 	
 	ggplot(d,aes(x = days_after_st)) + geom_histogram()+facet_grid(year ~ .)
@@ -40,8 +41,55 @@
 	# simple
 	#m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|st_cycle)+(1|pair), family = 'binomial', d) 
 	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|st_cycle)+(1|female), family = 'binomial', d) 
-	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(sin(rad_st) + cos(rad_st)|year)+(1|st_cycle)+(1|female), family = 'binomial', d)
-	
+	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(sin(rad_st) + cos(rad_st)|year_)+(1|st_cycle)+(1|female), family = 'binomial', d)
+				# optimize
+					# fails
+						ss <- getME(m,c("theta","fixef"))
+						m2 <- update(m,start=ss,control=glmerControl(optCtrl=list(maxfun=2e4)))
+					# optimizers
+						# bobyqa - runs
+							m3 <- update(m,start=ss,control=glmerControl(optimizer="bobyqa",
+                            optCtrl=list(maxfun=2e5)))
+								plot(allEffects(m3))
+								summary(glht(m3))
+								summary(m3)
+						# nloptwrap
+							m4 <- update(m,start=ss,control=glmerControl(optimizer="nloptwrap",
+                            optCtrl=list(maxfun=2e5)))
+								plot(allEffects(m3))
+								summary(glht(m3))
+								summary(m3)
+						# try all optimizers
+							aa <- allFit(m)
+							# bobyqa, nlminbw, optimx.L-BFGS-B ok, others failed
+							is.OK <- sapply(aa,is,"merMod")  
+							aa.OK <- aa[is.OK]
+							lapply(aa.OK,function(x) x@optinfo$conv$lme4$messages)
+							# how bad was the poor convergence in some optimizers
+							(lliks <- sort(sapply(aa.OK,logLik))) # very similar logLik
+							aa.fixef <- t(sapply(aa.OK,fixef))
+							aa.fixef.m <- melt(aa.fixef)
+							models <- levels(aa.fixef.m$Var1)
+							ylabs <- substr(models,1,3)
+							aa.fixef.m <- transform(aa.fixef.m,Var1=factor(Var1,levels=names(lliks)))
+							(gplot1 <- ggplot(aa.fixef.m,aes(x=value,y=Var1,colour=Var1))+geom_point()+
+								 facet_wrap(~Var2,scale="free")+
+									 scale_colour_brewer(palette="Dark2")+
+										 scale_y_discrete(breaks=models,
+														  labels=ylabs)+
+															  labs(x="",y=""))
+							
+						#Coefficients of variation of fixed-effect parameter estimates:
+						summary(unlist(daply(aa.fixef.m,"Var2",summarise,sd(value)/abs(mean(value)))))
+						
+						# variances of the random parameters
+						aa.stddev <- t(sapply(aa.OK,function(x) sqrt(unlist(VarCorr(x)))))
+						print(aa.stddev,digits=3) # NA issues
+						
+						aa.stddev.m <- melt(aa.stddev) 
+						aa.stddev.m <- transform(aa.stddev.m,Var1=factor(Var1,levels=names(lliks)))
+						gplot1 %+% aa.stddev.m # does not work, likely because of the NAs
+						
 	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|st_cycle)+(1|pair), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
 	m = glmer(flooded ~ sin(rad_st) + cos(rad_st) +(1|year)+(1|pair), family = 'binomial', d[d$fate%in%c('flood','hatch'),]) 
 	
@@ -361,38 +409,11 @@
 
 {# NEST INITIATION CYCLE - all days within the season
 	# prepare data
-	d = nn
-	dd = ddply(d,. (year, laid , moon_cycle, st_cycle, days_after_st), summarise, n_nest = length(year))
-	#dd = ddply(dd,. (year, moon_cycle, st_cycle), transform, laid_j_yc = laid_j-mean(laid_j))
-	
-	dsplit=split(dd,paste(dd$year))
-		foo=lapply(dsplit,function(x) {
-				#x=dsplit$"2006"
-				y = data.frame(laid = seq(min(x$laid), max(x$laid), by = 'day'), n_nest = 0, year = x$year[1])
-				y = y[!y$laid%in%x$laid,]
-				y = 
-				#x$t_a=c(x$treat[-1], NA) 	
-				x = merge(x,y, all=TRUE)
-				x$days_b = c(NA,x$days_after_st[-length(x$days_after_st)])	
-				x$days_after_st[is.na(x$days_after_st)]=x$days_b[is.na(x$days_after_st)]+1
-				# repeat for those with two days after each other with no data
-				x$days_b = c(NA,x$days_after_st[-length(x$days_after_st)])	
-				x$days_after_st[is.na(x$days_after_st)]=x$days_b[is.na(x$days_after_st)]+1
-				
-				x$days_b = c(NA,x$st_cycle[-length(x$st_cycle)])	
-				x$st_cycle[is.na(x$st_cycle)]=x$days_b[is.na(x$st_cycle)]
-				# repeat for those with two days after each other with no data
-				x$days_b = c(NA,x$st_cycle[-length(x$st_cycle)])	
-				x$st_cycle[is.na(x$st_cycle)]=x$days_b[is.na(x$st_cycle)]
-				return(x)
-				}
-				)
-		dd=do.call(rbind, foo)
-	dd$laid_j = as.numeric(format(as.POSIXct(dd$laid),"%j"))
-	dd$rad_lst= 2*dd$laid_j*pi/14.75
+	dd$datetime_j = as.numeric(format(as.POSIXct(dd$datetime_),"%j"))
+	dd$rad_lst= 2*dd$datetime_j*pi/14.75
 	dd$rad_st= 2*dd$days_after_st*pi/14.75
 	dd$rad_st= 2*dd$days_after_st*pi/14.75
-	dd$rad_lm= 2*dd$laid_j*pi/(14.75*2)
+	dd$rad_lm= 2*dd$datetime_j*pi/(14.75*2)
 	dd$rad_m= 2*dd$days_after_st*pi/(14.75*2)
 	#dd$rad_st_yc= 2*dd$laid_j_yc*pi/14.75
 	#dd$rad_m_yc= 2*dd$laid_j_yc*pi/(14.75*2)
@@ -412,7 +433,20 @@
 		
 	m = glmer(n_nest ~ sin(rad_st) + cos(rad_st) + (1|year) +(1|st_cycle), family = 'poisson',dd)	
 	m = glmer(n_nest ~ sin(rad_st) + cos(rad_st) + (sin(rad_st) + cos(rad_st)|year) +(1|st_cycle),family = 'poisson', dd) 
-		
+				
+				# optimize based on https://rstudio-pubs-static.s3.amazonaws.com/33653_57fc7b8e5d484c909b615d8633c01d51.html
+				tt <- getME(m,"theta")
+				ll <- getME(m,"lower")
+				min(tt[ll==0]) # issue - it is close to one
+				
+				derivs1 <- m@optinfo$derivs
+				sc_grad1 <- with(derivs1,solve(Hessian,gradient))
+				max(abs(sc_grad1))
+				max(pmin(abs(sc_grad1),abs(derivs1$gradient))) # it is below the tolerance (0.001)
+				
+				ss <- getME(m,c("theta","fixef"))
+				m <- update(m,start=ss,control=glmerControl(optCtrl=list(maxfun=2e4))) # worked
+				
 	plot(allEffects(m))
 	summary(glht(m))
 	summary(m)
@@ -428,7 +462,7 @@
 				 for(jj in 1:length(period)){
 							v=dd[dd$year==unique(dd$year)[j],] # first row removes as it contains lag 0 autocorrelation 
 							v$period=period[jj]
-							v$rad= (2*pi*v$laid_j) / (period[jj])
+							v$rad= (2*pi*v$datetime_j) / (period[jj])
 							v$sin_=sin(v$rad)
 							v$cos_=cos(v$rad)
 							o[[as.character(period[jj])]] = lm(n_nest ~ sin_ + cos_ ,v)
@@ -536,6 +570,35 @@
 }
 
 {# OLD
+
+{#
+dd = ddply(d,. (year, laid , moon_cycle, st_cycle, days_after_st), summarise, n_nest = length(year))
+	#dd = ddply(dd,. (year, moon_cycle, st_cycle), transform, laid_j_yc = laid_j-mean(laid_j))
+	
+	dsplit=split(dd,paste(dd$year))
+		foo=lapply(dsplit,function(x) {
+				#x=dsplit$"2006"
+				y = data.frame(laid = seq(min(x$laid), max(x$laid), by = 'day'), n_nest = 0, year = x$year[1])
+				y = y[!y$laid%in%x$laid,]
+				y = 
+				#x$t_a=c(x$treat[-1], NA) 	
+				x = merge(x,y, all=TRUE)
+				x$days_b = c(NA,x$days_after_st[-length(x$days_after_st)])	
+				x$days_after_st[is.na(x$days_after_st)]=x$days_b[is.na(x$days_after_st)]+1
+				# repeat for those with two days after each other with no data
+				x$days_b = c(NA,x$days_after_st[-length(x$days_after_st)])	
+				x$days_after_st[is.na(x$days_after_st)]=x$days_b[is.na(x$days_after_st)]+1
+				
+				x$days_b = c(NA,x$st_cycle[-length(x$st_cycle)])	
+				x$st_cycle[is.na(x$st_cycle)]=x$days_b[is.na(x$st_cycle)]
+				# repeat for those with two days after each other with no data
+				x$days_b = c(NA,x$st_cycle[-length(x$st_cycle)])	
+				x$st_cycle[is.na(x$st_cycle)]=x$days_b[is.na(x$st_cycle)]
+				return(x)
+				}
+				)
+		dd=do.call(rbind, foo) 
+}
 {# LOAD DATA
 	
 	d<-read.csv(file=paste(wd, "metadata_illu_tide_temp.csv", sep=''),header=T,sep=";", fill=T, stringsAsFactors=FALSE)
