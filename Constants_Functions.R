@@ -1,15 +1,18 @@
-{# TOOLS
+
 	{# define datetime
 		Sys.setenv(TZ="UTC")	
 	}
 	
 	{# load packages
-		sapply(c('arm','blmeco','effects', 'data.table','ggplot2','grid', 'lattice','magrittr','multcomp','plyr','raster','RColorBrewer','sqldf','stringr','XLConnect'),
+		# note:  devtools::install_github("dkahle/ggmap", ref = "tidyup") # download this specific 
+		sapply(c('arm','blmeco','effects', 'data.table','devtools','ggplot2','ggmap','grid', 'lattice','lubridate','magrittr','multcomp','plyr','raster','RColorBrewer','sqldf','stringr','XLConnect'),
     function(x) suppressPackageStartupMessages(require(x , character.only = TRUE, quietly = TRUE) ))
 
 	}
 	
 	{# define constants
+		nsim <- 5000 # number of simulations
+			
 		varnames = c("tag", "datetime_", "x", "y","z", "temp", "batt")
 		
 		min_ = -0.1
@@ -36,6 +39,7 @@
 				ln_col="grey80"
 
 	}
+	
 	{# allFit function - https://github.com/lme4/lme4/blob/master/inst/utils/allFit.R
 	 # having trouble installing package 'optimix'
 	 library("lme4")
@@ -185,5 +189,11 @@ summary.allfit <- function(object, ...) {
     namedList(which.OK, msgs, fixef, llik, sdcor, theta, times, feval)
 }
 	}	
-}	
+	  
+	  transpcol = function (col = "red", newalpha = 100, mcv = 255){
+	   mycol = col2rgb(col)
+		rgb(mycol[1, ], mycol[2, ], mycol[3, ], alpha = newalpha, 
+        maxColorValue = mcv)
+	}
+
 
