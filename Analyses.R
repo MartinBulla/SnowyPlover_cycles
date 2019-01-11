@@ -141,7 +141,7 @@ ggsave(file=paste(outdir,'Figure_D.png',sep=''),width = 3.5, height = 3.5*1.5, u
     expand_limits(x = 0, y = 0)+
 	scale_x_continuous(limits = c(0,15),expand = c(0,0),breaks= seq(5,15,by = 5), labels=seq(5,15,by = 5))+  
     scale_y_continuous(limits = c(0,180),expand = c(0,0),breaks= seq(0,180,by = 60), labels=seq(0,180,by = 60))+
-	labs(x = "Days after srping tide",color = 'Spring-tide\ncycle #', y ="Maximum daily tide [cm]")+  
+	labs(x = "Days after spring tide",color = 'Spring-tide\ncycle #', y ="Maximum daily tide [cm]")+  
 	scale_colour_gradient(low = "deepskyblue", high = "orange", guide = "colourbar")+
     #scale_colour_manual(values=c("grey80", "firebrick3"))+
 	#guides(color = guide_legend(override.aes = list(size = 2)))+
@@ -150,7 +150,8 @@ ggsave(file=paste(outdir,'Figure_D.png',sep=''),width = 3.5, height = 3.5*1.5, u
 		axis.line=element_line(colour="grey70", size=0.25),
 		panel.border=element_rect(colour="grey70",fill = NA, size=0.25),
 		panel.grid = element_blank(),
-		panel.margin = unit(0, "mm"),
+		#panel.margin = unit(0, "mm"),
+		panel.spacing = unit(0, "mm"),
 		strip.text.x =element_text(size = 6, color="grey30",  margin=margin(1,1,1,1,"mm")), #grey50
 		strip.background=element_rect(fill="grey99",colour="grey70", size=0.25),
 		#strip.background = element_blank(), 
@@ -234,7 +235,7 @@ ggsave(file=paste(outdir,'Figure_SX_.png',sep=''),width = 3.5, height = 2, units
 						
 			qqnorm(resid(m), main=list("Normal Q-Q Plot: residuals", cex=0.8),col='red') 
 			qqline(resid(m))
-			 
+			??
 			qqnorm(unlist(ranef(m)$year[1]), main = " year")
 			qqline(unlist(ranef(m)$year[1]))
 			
@@ -316,8 +317,8 @@ ggsave(file=paste(outdir,'Figure_SX_.png',sep=''),width = 3.5, height = 2, units
 		mapPoints <- ggmap(map) + geom_point(size=0.2, aes(x = lon, y = lat, colour = as.factor(flooded)), data = m) + facet_wrap(~ year, ncol=5)
 		
 		mapPoints + scale_colour_manual(values=(cols), labels =c("No", "Yes")) +
-		  scale_x_continuous(name = 'Longitude [°]', breaks= -106.9580, labels=c("-106.958"))+
-		  labs(color = 'Flooded', y ='Latitude [°]')+  	
+		  scale_x_continuous(name = 'Longitude [??]', breaks= -106.9580, labels=c("-106.958"))+
+		  labs(color = 'Flooded', y ='Latitude [??]')+  	
 		  guides(color = guide_legend(override.aes = list(size = 2)))+
 		  theme_light() +
 		  theme( #text = element_text(size = theme.size),
@@ -637,7 +638,7 @@ ggsave(file=paste(outdir,'Figure_SX_.png',sep=''),width = 3.5, height = 2, units
 			mtext("lmer(flooded ~ scale(lat)+scale(st_cycle_c)+sin(rad_st) +cos(rad_st)+(1|year)+(1|st_cycle_c)+(1|female),d)", side = 3, line = -2, cex=0.7,outer = TRUE)		
 			qqnorm(resid(m), main=list("Normal Q-Q Plot: residuals", cex=0.8),col='red') 
 			qqline(resid(m))
-			 
+			??
 			qqnorm(unlist(ranef(m)$year[1]), main = " year")
 			qqline(unlist(ranef(m)$year[1]))
 			
@@ -702,7 +703,7 @@ ggsave(file=paste(outdir,'Figure_SX_.png',sep=''),width = 3.5, height = 2, units
 			mtext("glmer(flooded ~scale(lat)+scale(st_cycle_c)+sin(rad_st) +cos(rad_st)+(1|year)+(1|st_cycle_c)+(1|female), family = 'binomial', d)", side = 3, line = -2, cex=0.7,outer = TRUE)	
 			qqnorm(resid(m), main=list("Normal Q-Q Plot: residuals", cex=0.8),col='red') 
 			qqline(resid(m))
-			 
+			??
 			qqnorm(unlist(ranef(m)$year[1]), main = " year")
 			qqline(unlist(ranef(m)$year[1]))
 			
@@ -929,7 +930,7 @@ ggsave(file=paste(outdir,'Figure_SX_.png',sep=''),width = 3.5, height = 2, units
 			mtext("lmer(n_nest ~ st_cycle_c *cos(rad_st)+ st_cycle_c*sin(rad_st) + (1|year/st_cycle_c/first_second), dd)", side = 3, line = -2, cex=0.7,outer = TRUE)		
 			qqnorm(resid(m), main=list("Normal Q-Q Plot: residuals", cex=0.8),col='grey') 
 			qqline(resid(m))
-			 
+			??
 			qqnorm(unlist(ranef(m)$year[1]), main = " year")
 			qqline(unlist(ranef(m)$year[1]))
 			
@@ -975,7 +976,7 @@ ggsave(file=paste(outdir,'Figure_SX_.png',sep=''),width = 3.5, height = 2, units
 			
 			qqnorm(resid(m), main=list("Normal Q-Q Plot: residuals", cex=0.8),col='grey') 
 			qqline(resid(m))
-			 
+			??
 			qqnorm(unlist(ranef(m)$year[1]), main = " year",col='grey')
 			qqline(unlist(ranef(m)$year[1]))
 			
@@ -1021,7 +1022,7 @@ ggsave(file=paste(outdir,'Figure_SX_.png',sep=''),width = 3.5, height = 2, units
 			mtext("glmer(n_nest ~  st_cycle_c*cos(rad_st)+ st_cycle_c*sin(rad_st) + (1|year/st_cycle_c/first_second)+ (1|l_n), family = 'poisson',dd)", side = 3, line = -2, cex=0.7,outer = TRUE)		
 			qqnorm(resid(m), main=list("Normal Q-Q Plot: residuals", cex=0.8),col='grey') 
 			qqline(resid(m))
-			 
+			??
 			qqnorm(unlist(ranef(m)$year[1]), main = " year")
 			qqline(unlist(ranef(m)$year[1]))
 			
@@ -1063,7 +1064,7 @@ ggsave(file=paste(outdir,'Figure_SX_.png',sep=''),width = 3.5, height = 2, units
 			mtext("glmer(n_nest ~ st_cycle_c +sin(rad_st) + cos(rad_st) + (1|year/st_cycle_c/first_second)+ (1|l_n), family = 'poisson',dd)", side = 3, line = -2, cex=0.7,outer = TRUE)		
 			qqnorm(resid(m), main=list("Normal Q-Q Plot: residuals", cex=0.8),col='grey') 
 			qqline(resid(m))
-			 
+			??
 			qqnorm(unlist(ranef(m)$year[1]), main = " year")
 			qqline(unlist(ranef(m)$year[1]))
 			
@@ -2997,7 +2998,7 @@ ggsave(file=paste(outdir,'Figure_SX_.png',sep=''),width = 3.5, height = 2, units
 			mtext("lmer(n_nest ~ st_cycle_c *cos(rad_st)+ st_cycle_c*sin(rad_st) + (1|year/st_cycle_c/first_second), dd)", side = 3, line = -2, cex=0.7,outer = TRUE)		
 			qqnorm(resid(m), main=list("Normal Q-Q Plot: residuals", cex=0.8),col='grey') 
 			qqline(resid(m))
-			 
+			??
 			qqnorm(unlist(ranef(m)$year[1]), main = " year")
 			qqline(unlist(ranef(m)$year[1]))
 			
@@ -3043,7 +3044,7 @@ ggsave(file=paste(outdir,'Figure_SX_.png',sep=''),width = 3.5, height = 2, units
 			
 			qqnorm(resid(m), main=list("Normal Q-Q Plot: residuals", cex=0.8),col='grey') 
 			qqline(resid(m))
-			 
+			??
 			qqnorm(unlist(ranef(m)$year[1]), main = " year",col='grey')
 			qqline(unlist(ranef(m)$year[1]))
 			
@@ -3089,7 +3090,7 @@ ggsave(file=paste(outdir,'Figure_SX_.png',sep=''),width = 3.5, height = 2, units
 			mtext("glmer(n_nest ~  st_cycle_c*cos(rad_st)+ st_cycle_c*sin(rad_st) + (1|year/st_cycle_c/first_second)+ (1|l_n), family = 'poisson',dd)", side = 3, line = -2, cex=0.7,outer = TRUE)		
 			qqnorm(resid(m), main=list("Normal Q-Q Plot: residuals", cex=0.8),col='grey') 
 			qqline(resid(m))
-			 
+			??
 			qqnorm(unlist(ranef(m)$year[1]), main = " year")
 			qqline(unlist(ranef(m)$year[1]))
 			
@@ -3131,7 +3132,7 @@ ggsave(file=paste(outdir,'Figure_SX_.png',sep=''),width = 3.5, height = 2, units
 			mtext("glmer(n_nest ~ st_cycle_c +sin(rad_st) + cos(rad_st) + (1|year/st_cycle_c/first_second)+ (1|l_n), family = 'poisson',dd)", side = 3, line = -2, cex=0.7,outer = TRUE)		
 			qqnorm(resid(m), main=list("Normal Q-Q Plot: residuals", cex=0.8),col='grey') 
 			qqline(resid(m))
-			 
+			??
 			qqnorm(unlist(ranef(m)$year[1]), main = " year")
 			qqline(unlist(ranef(m)$year[1]))
 			
