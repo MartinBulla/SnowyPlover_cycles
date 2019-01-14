@@ -85,7 +85,6 @@ male: unique ID of incubating male.
 clutch_size_found: number of eggs in a clutch when eggs were floated (indicates wether clutch was complete when found and floated)
 clutch_size: number of eggs in the complete clutch
 floated: date when eggs were floated
-end: date when clutch either hatched or failed
 fate: Fate (Hatched (=hatch), Unhatched (=unhatch), Abandoned (=aban), Predated (=pred), Flooded by tides (=tide), Flooded by rain (=rain), Trampled, Broken, Unknown)
 lat: latitude of a particular nest.
 lon: longitude of a particular nest.
@@ -93,7 +92,7 @@ float_1: floating stage of first egg of particular clutch
 float_2: floating stage of second egg of particular clutch (if clutch size > 1, otherwise NA)
 float_3: floating stage of third egg of particular clutch (if clutch size > 2, otherwise NA)
 com: particular comments on clutches indicating unusual observation 
-### SECOND TIME end_: date when clutch either hatched or failed
+end_: date when clutch either hatched or failed
 float_min: if more than one egg was floated, the smallest floating stage (equals the youngest egg of the clutch)
 init: date of nest initiation (when the first egg was laid)
 laid: start of incubation based on floating date and floating stages
