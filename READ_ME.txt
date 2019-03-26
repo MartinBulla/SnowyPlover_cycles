@@ -1,8 +1,8 @@
----------------------------------------------------------------------------
+﻿---------------------------------------------------------------------------
 Description of the Supporting Information, including scripts and data to generate the results and visualisations, from Nest initiation and flooding in response to season and semi-lunar spring tides in a ground-nesting shorebird by Plaschke et al. 2019
 ---------------------------------------------------------------------------
 
-WHEN USING any of the Supporting information, PLEASE CITE both the original paper and the Supporting information
+WHEN USING any of the Supporting information, PLEASE CITE both the original paper and the Supporting information 
 
 Plaschke et al. (2019).  Nest initiation and flooding in response to season and semi-lunar spring tides in a ground-nesting shorebird.
 
@@ -10,6 +10,7 @@ Plaschke et al. (2019). Supporting information for 'Nest initiation and flooding
 	
 For any publication making substantial use of the data, please contact Martin Bulla (bulla.mar@gmail.com) or Clemens Küpper (ckuepper@orn.mpg.de), as the authors welcome the opportunity for collaboration and wish to comment prior to publication.
 
+The detailed information about the computer/software set up is available from sessionInfo.txt
 ---------------------------------------------------------------------------
 CONTENT
 1. Supplementary Information.

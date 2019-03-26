@@ -1,0 +1,55 @@
+R version 3.5.1 (2018-07-02)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 7 x64 (build 7601) Service Pack 1
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_United States.1252 
+[2] LC_CTYPE=English_United States.1252   
+[3] LC_MONETARY=English_United States.1252
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.1252    
+
+attached base packages:
+[1] grid      stats     graphics  grDevices utils     datasets  methods  
+[8] base     
+
+other attached packages:
+ [1] dfoptim_2018.2-1     nloptr_1.2.1         optimx_2018-7.10    
+ [4] stringr_1.3.1        sqldf_0.4-11         RSQLite_2.1.1       
+ [7] gsubfn_0.7           proto_1.0.0          raster_2.7-15       
+[10] sp_1.3-1             magrittr_1.5         lubridate_1.7.4     
+[13] ggmap_2.7.904        usethis_1.4.0        devtools_2.0.0      
+[16] data.table_1.11.8    blmeco_1.1           zoo_1.8-4           
+[19] XLConnect_0.2-15     XLConnectJars_0.2-15 RMySQL_0.10.15      
+[22] DBI_1.0.0            RColorBrewer_1.1-2   randomcoloR_1.1.0   
+[25] plyr_1.8.4           multcomp_1.4-8       TH.data_1.0-9       
+[28] survival_2.42-6      mvtnorm_1.0-8        MCMCglmm_2.26       
+[31] ape_5.2              coda_0.19-2          lattice_0.20-35     
+[34] ggplot2_3.0.0        effects_4.0-3        carData_3.0-2       
+[37] arm_1.10-1           lme4_1.1-21          Matrix_1.2-14       
+[40] MASS_7.3-51          Amelia_1.7.5         Rcpp_0.12.19        
+[43] AICcmodavg_2.1-1    
+
+loaded via a namespace (and not attached):
+ [1] cubature_1.4      Rtsne_0.13        VGAM_1.0-6        minqa_1.2.4      
+ [5] colorspace_1.3-2  rjson_0.2.20      rprojroot_1.3-2   estimability_1.3 
+ [9] corpcor_1.6.9     base64enc_0.1-3   fs_1.2.6          remotes_2.0.1    
+[13] bit64_0.9-7       codetools_0.2-15  splines_3.5.1     pkgload_1.0.1    
+[17] jsonlite_1.5      rJava_0.9-10      cluster_2.0.7-1   png_0.1-7        
+[21] compiler_3.5.1    httr_1.3.1        backports_1.1.2   assertthat_0.2.0 
+[25] lazyeval_0.2.1    survey_3.34       cli_1.0.1         prettyunits_1.0.2
+[29] tools_3.5.1       bindrcpp_0.2.2    gtable_0.2.0      glue_1.3.0       
+[33] dplyr_0.7.7       V8_1.5            debugme_1.1.0     nlme_3.1-137     
+[37] tensorA_0.36.1    ps_1.2.0          testthat_2.0.1    scales_1.0.0     
+[41] parallel_3.5.1    sandwich_2.5-0    curl_3.2          memoise_1.1.0    
+[45] MuMIn_1.42.1      reshape_0.8.7     stringi_1.2.4     desc_1.2.0       
+[49] boot_1.3-20       pkgbuild_1.0.2    chron_2.3-53      RgoogleMaps_1.4.2
+[53] rlang_0.3.0       pkgconfig_2.0.2   bitops_1.0-6      purrr_0.2.5      
+[57] bindr_0.1.1       labeling_0.3      bit_1.1-14        processx_3.2.0   
+[61] tidyselect_0.2.5  R6_2.3.0          pillar_1.3.0      foreign_0.8-71   
+[65] withr_2.1.2       abind_1.4-5       nnet_7.3-12       tibble_1.4.2     
+[69] crayon_1.3.4      jpeg_0.1-8        blob_1.1.1        callr_3.0.0      
+[73] digest_0.6.18     xtable_1.8-3      numDeriv_2016.8-1 stats4_3.5.1     
+[77] munsell_0.5.0     unmarked_0.12-2   tcltk_3.5.1       sessioninfo_1.1.0
