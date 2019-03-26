@@ -5,6 +5,7 @@
    nn$floated = as.Date(nn$floated, "%Y-%m-%d")
    nn$found = as.Date(nn$found, "%Y-%m-%d")
    nn$end_ = as.Date(nn$end, "%Y-%m-%d")
+   nn$end = NULL 
    nn$clutch_size = as.numeric(nn$clutch_size)
 		
    # prepare laying dates
@@ -87,8 +88,8 @@
 				#gs_[gs_$dur>14.765,]
 		  
 		  # add tide cycles to nests
-			j =  sqldf("select*from n join gs_", stringsAsFactors = FALSE)
-			nn = sqldf("select*from j WHERE laid BETWEEN  st_start and st_end OR laid = st_start")
+			j =  sqldf("select*from n join gs_", stringsAsFactors = FALSE, drv ='SQLite')
+			nn = sqldf("select*from j WHERE laid BETWEEN  st_start and st_end OR laid = st_start", drv ='SQLite')
 			#n[!n$pk%in%nn$pk,]
 		  # standardized cycles withih year
 			nn = ddply(nn,. (year), transform, st_cycle_c = st_cycle - min(st_cycle)+1)
@@ -108,8 +109,8 @@
 			gss_=gs[,c('m_start','m_end','moon_cycle')] 
 		
 		  # add moon cycles to nests
-			j =  sqldf("select*from nn join gss_", stringsAsFactors = FALSE)
-			nn = sqldf("select*from j WHERE laid BETWEEN  m_start and m_end OR laid = m_start")
+			j =  sqldf("select*from nn join gss_", stringsAsFactors = FALSE, drv ='SQLite')
+			nn = sqldf("select*from j WHERE laid BETWEEN  m_start and m_end OR laid = m_start", drv ='SQLite')
 			#n[!n$pk%in%nn$pk,]	
 		
 		  # calculate days after last new moon
@@ -120,7 +121,7 @@
 			tt = tt[,c('pk','year','date','max_tide_height')]
 			tt$date = as.POSIXct(tt$date)
 			
-			# substitute NAs with mean height of previous and next day
+			# substitute NAs (impute) with mean height of previous and next day
 				dx = tt[is.na(tt$max_tide_height),c('date','max_tide_height')]
 				dx2 = tt[!is.na(tt$max_tide_height) & as.character(tt$date)%in%as.character(dx$date+24*60*60),c('date','max_tide_height')]
 				dx2$date=dx2$date-24*60*60
@@ -161,24 +162,24 @@
 			dd$day_j = as.numeric(format(as.POSIXct(dd$datetime_),"%j"))	
 		
 		# add tide cycles to nests
-		j =  sqldf("select*from dd join gs_", stringsAsFactors = FALSE)
-		dd = sqldf("select*from j WHERE datetime_ BETWEEN  st_start and st_end OR datetime_ = st_start")
+		j =  sqldf("select*from dd join gs_", stringsAsFactors = FALSE, drv ='SQLite')
+		dd = sqldf("select*from j WHERE datetime_ BETWEEN  st_start and st_end OR datetime_ = st_start", drv ='SQLite')
 		dd$days_after_st = as.numeric(difftime(dd$datetime_, dd$st_start, units ='days'))		
 		
 		# add moon cycles to nests
-		j =  sqldf("select*from dd join gss_", stringsAsFactors = FALSE)
-		dd = sqldf("select*from j WHERE datetime_ BETWEEN  m_start and m_end OR datetime_ = m_start")
+		j =  sqldf("select*from dd join gss_", stringsAsFactors = FALSE, drv ='SQLite')
+		dd = sqldf("select*from j WHERE datetime_ BETWEEN  m_start and m_end OR datetime_ = m_start", drv ='SQLite')
 		dd$days_after_nm = as.numeric(difftime(dd$datetime_, dd$m_start, units ='days'))	
 		# add max tide height
 		dd$max_tide_height =tt$max_tide_height[match(dd$datetime_, tt$date)]
 	}	
 {# finalize tide dataset	
 		# add moon cycles to tide
-			jj =  sqldf("select*from tt join gss_", stringsAsFactors = FALSE)
-			tt_ = sqldf("select*from jj WHERE date BETWEEN  m_start and m_end OR date = m_start")
+			jj =  sqldf("select*from tt join gss_", stringsAsFactors = FALSE, drv ='SQLite')
+			tt_ = sqldf("select*from jj WHERE date BETWEEN  m_start and m_end OR date = m_start", drv ='SQLite')
 		# add tide cycles to tide
-			jj =  sqldf("select*from tt_ join gs_", stringsAsFactors = FALSE)
-			tt = sqldf("select*from jj WHERE date BETWEEN  st_start and st_end OR date = st_start")
+			jj =  sqldf("select*from tt_ join gs_", stringsAsFactors = FALSE, drv ='SQLite')
+			tt = sqldf("select*from jj WHERE date BETWEEN  st_start and st_end OR date = st_start", drv ='SQLite')
 		# calculate days after last new moon
 			tt$days_after_nm = as.numeric(difftime((tt$date), tt$m_start, units ='days'))	
 		# calculate days after last spring tide
