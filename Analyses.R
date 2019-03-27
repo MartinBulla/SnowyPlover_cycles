@@ -243,10 +243,12 @@ ggsave(file=paste(outdir,'Figure_S1.png',sep=''),width = 3.5, height = 2, units 
 	
 	# number of flooded nests per year
 	nn$n=1
-	nt = ddply(nn,.(year), summarise, n = sum(n[fate%in%c('tide')]))
+	nt = ddply(nn,.(year), summarise, n_all = sum(n), n = sum(n[fate%in%c('tide')]))
 	summary(nt)
 	table(nt$n)
-
+	nt$prop_flooded = nt$n/nt$n_all
+	summary(nt$prop_flooded*100)
+	
 }
 {# FIGURE 4 - nest frequencies per year with tideheights (uses all nests)
   {# prepare	
